@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     </div>
                     <div class="story-card-footer">
                         <span>${story.paragraphs ? Object.keys
-                            (story.paragraphs).length : 0} Paragraphs</span>
+                            (story.paragraphs).length : 0} Paragraphs &nbsp;</span>
                         <button class="like-btn" data-story-id="${id}">
                             <i class="far fa-heart"></i>
                         </button>
