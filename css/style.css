@@ -85,7 +85,9 @@ body {
     object-position: center;
     transition: transform 0.3s ease;
 }
-
+.story-card:hover .story-card-image{
+    transform: scale(1.06);
+}
 .story-card-content {
     padding: 20px;
 }
