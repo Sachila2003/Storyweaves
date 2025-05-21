@@ -14,7 +14,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const newStroryTitleInput = document.getElementById('new-story-title');
     const newStoryFirstParagraphInput = document.getElementById('new-story-first-paragraph');
     const imageUpload = document.getElementById('story-image-upload');
-    const imagePreview = document.getElementById('preview-image');
+    const imagePreview = document.getElementById('image-preview');
+    const previewImg = document.getElementById('preview-image');
     const storyImageContainer = document.getElementById('story-image-container');
 
     //state
@@ -25,12 +26,13 @@ document.addEventListener('DOMContentLoaded', function () {
     imageUpload.addEventListener('change', function (e) {
         const file = e.target.files[0];
         if (file) {
-            //validate image size 5mb
+            //validate image size 5MB
             if (file.size > 1024 * 1024 * 5) {
                 alert('Image size cannot be greater than 5MB');
                 return;
             }
-            // show loading state
+
+            //show loading state
             imagePreview.classList.add('loading');
 
             const reader = new FileReader();
@@ -38,15 +40,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 selectImageUrl = event.target.result;
                 previewImg.src = selectImageUrl;
 
-                //ensure image is loading befor show 
+                //ensure image is loaded befor show
                 previewImg.onload = function () {
                     imagePreview.classList.remove('loading');
                     imagePreview.style.display = 'block';
 
                     if (this.naturalHeight > this.naturalWidth) {
-                        this.style.ObjectPositon = 'center top';
+                        this.style.objectPosition = 'center top';
                     } else {
-                        this.style.ObjectPositon = 'center center'
+                        this.style.objectPosition = 'center center'
                     }
                 };
 
@@ -57,7 +59,8 @@ document.addEventListener('DOMContentLoaded', function () {
             };
             reader.readAsDataURL(file);
         }
-    })
+
+    });
 
     function loadStories() {
         // load all stories from firebase
@@ -73,12 +76,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 const storyCard = document.createElement('div');
                 storyCard.className = 'story-card';
                 storyCard.innerHTML = `
-                ${story.coverImage ?
+                    ${story.coverImage ?
                         `<div class="story-card-image-container">
-                    <img src="${story.coverImage}"
-                    class="story-card-image" alt="${story.title}">
-                    </div>`: ``}
-                }
+                            <img src="${story.coverImage}" 
+                            class="story-card-image" alt="${story.title}">
+                        </div>` : ``}
                     <div class="story-card-content">
                         <h3>${story.title}</h3>
                         <p>${lastParagraph.text}</p>
@@ -91,8 +93,13 @@ document.addEventListener('DOMContentLoaded', function () {
                         </button>
                     </div>
                 `;
+                storyCard.addEventListener('click', (e) =>{
+                    if(!e.target.closest('.like-btn')){
+                        viewStory(id, story);
+                    }
+                });
 
-                storiesGrid.addEventListener('click', () => viewStory(id, story));
+                
                 storiesGrid.appendChild(storyCard);
             });
         });
@@ -103,17 +110,22 @@ document.addEventListener('DOMContentLoaded', function () {
         currentStoryId = id;
         storyTitle.textContent = story.title;
         storyContent.innerHTML = '';
+
         if (story.coverImage) {
             storyImageContainer.innerHTML = `
-                 <img class="${story.coverImage}" class="story-image" alt=${story.title}">`;
-                 storyImageContainer.style.display.querySelector('img');
-                 imagePreview.onload = function (){
-                    if(this.naturalHeight > this.naturalWidth){
-                        this.style.ObjectPositon = 'center top';
-                    }else{
-                        this.style.ObjectPositon = 'center center';
-                    }
-                 };
+                <img src="${story.coverImage}" class="story-image" 
+                alt="${story.title}">
+            `;
+            storyImageContainer.style.display = 'block';
+
+            const img = storyImageContainer.querySelector('img');
+            img.onload = function () {
+                if (this.naturalHeight > this.naturalWidth) {
+                    this.style.objectPosition = 'center top';
+                } else {
+                    this.style.objectPosition = 'center center';
+                }
+            };
         } else {
             storyImageContainer.style.display = 'none';
         }
@@ -143,8 +155,7 @@ document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('paragraph-like-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                likeParagraph(btn.CDATA_SECTION_NODE.storyId, btn.CDATA_SECTION_NODE.paragraphId);
-
+                likeParagraph(btn.dataset.storyId, btn.dataset.paragraphId);
             });
         });
     }
@@ -161,7 +172,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        if(!selectImageUrl){
+        if (!selectImageUrl) {
             alert('Please select a cover image');
             return;
         }
@@ -185,39 +196,51 @@ document.addEventListener('DOMContentLoaded', function () {
             selectImageUrl = null;
             imagePreview.style.display = 'none';
 
-            viewStory(newStoryref.id,{
-                title:title,
+            viewStory(newStoryref.id, {
+                title: title,
                 coverImage: selectImageUrl,
-                paragraph:{
-                    first:{
+                paragraphs: {
+                    first: {
                         text: firstParagraph,
-                        likes:0
+                        likes: 0
                     }
                 }
             });
         });
     }
+
     //like a story
-    function likeStory(storyId){
-        const paragraphref = database.ref(`stories/${storyId}/paragraphs/${paragraphId}/likes`);
-        paragraphref.transaction((currentLikes) =>{
-            return (currentLikes || 0) +1;
-        })
+    function likeStory(storyId) {
+        const storyref = database.ref(`stories/${storyId}/likes`);
+        storyref.transaction((currentLikes) => {
+            return (currentLikes || 0) + 1;
+        });
     }
-    //add a new paragraph
-    function addParagraph(storyId, text){
-        if(text.length < 50){
+
+    //like a paragraph
+    function likeParagraph(storyId, paragraphId) {
+        const paragraphref = database.ref(`stories/${storyId}/
+            paragraphs/${paragraphId}/likes`);
+        paragraphref.transaction((currentLikes) => {
+            return (currentLikes || 0) + 1;
+        });
+    }
+
+    //Add a new paragraph to a story
+    function addParagraph(storyId, text) {
+        if (text.length < 50) {
             alert('Paragraph must be at least 50 characters long');
             return;
         }
-        const newParagraphrefs = database.ref(`stories/${storyId}/
+
+        const newParagraphRefs = database.ref(`stories/${storyId}/
             paragraphs`).push();
-            newParagraphrefs.set({
-                text: text,
-                timestamp: firebase.database.ServerValue.TIMESTAMP,
-                likes: 0
-            });
-            newParagraphInput.value = '';
+        newParagraphRefs.set({
+            text: text,
+            timestamp: firebase.database.ServerValue.TIMESTAMP,
+            likes: 0
+        });
+        newParagraphInput.value = '';
     }
 
     //Event Listeners
@@ -232,16 +255,17 @@ document.addEventListener('DOMContentLoaded', function () {
     closeModalBtn.addEventListener('click', () => {
         newStoryModal.style.display = 'none';
     });
-    backButton.addEventListener('click', () =>{
-        newStoryModal.style.display = 'none';
+
+    backButton.addEventListener('click', () => {
+        storyView.style.display = 'none';
         document.querySelector('.stories-container').style.display = 'block';
         currentStoryId = null;
     });
 
     submitParagraphBtn.addEventListener('click', () => {
-       if(currentStoryId){
-          addParagraph(currentStoryId, newParagraphInput.value)
-       }
+        if (currentStoryId) {
+            addParagraph(currentStoryId, newParagraphInput.value);
+        }
     });
 
     window.addEventListener('click', (e) => {
